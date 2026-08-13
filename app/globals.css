@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --purple:    #79709E;
+  --lavender:  #C9BFE9;
+  --lav-tint:  #D9D5F7;
+  --grey:      #F4F4F4;
+  --charcoal:  #040610;
+  --orange:    #E5974D;
+  --yellow:    #F3C948;
+  --yel-tint:  #FFF38B;
+  --muted:     #6E6F75;
+  --white:     #FFFFFF;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--grey);
+  color: var(--charcoal);
+  font-family: "ABC Diatype", Roboto, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Eyebrow label */
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.eyebrow-white {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  color: var(--white);
+}
+
+/* Yellow underline accent */
+.yellow-rule::after {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: var(--yellow);
+  margin-top: 8px;
+}
+
+/* Pill badge */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  background: var(--lav-tint);
+  color: var(--charcoal);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--purple);
+  flex: none;
+}
+
+/* Card */
+.card {
+  background: var(--white);
+  border: 1px solid var(--lavender);
+  border-radius: 16px;
+  transition: border-color 150ms;
+}
+.card:hover { border-color: var(--purple); }
+
+/* Nav button */
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--charcoal);
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  transition: background 120ms;
+}
+.nav-btn:hover { background: var(--grey); }
+.nav-btn.active { background: var(--lav-tint); }
+
+/* Segment toggle */
+.seg {
+  display: flex;
+  gap: 2px;
+  background: var(--white);
+  border: 1px solid var(--lavender);
+  border-radius: 999px;
+  padding: 3px;
+}
+.seg-btn {
+  position: relative;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  cursor: pointer;
+  color: var(--charcoal);
+  transition: color 120ms;
+}
+.seg-btn.active { color: var(--white); }
+.seg-btn.active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--purple);
+  z-index: -1;
+}
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.data-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--grey);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--lavender);
+}
+.data-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(4,6,16,0.10);
+  vertical-align: top;
+}
+
+/* Yellow CTA button */
+.btn-yellow {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--yellow);
+  color: var(--charcoal);
+  border: none;
+  border-radius: 999px;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.btn-yellow:hover { background: var(--yel-tint); }
+
+/* Purple outline button */
+.btn-outline {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--white);
+  color: var(--charcoal);
+  border: 1px solid var(--lavender);
+  border-radius: 999px;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: border-color 120ms;
+}
+.btn-outline:hover { border-color: var(--purple); }
