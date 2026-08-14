@@ -12,63 +12,71 @@ const STAGE_TABS = [
   { id: 'Contracting',             label: 'Stage 4 · Contracting' },
 ]
 
-// Each tile defines its own columns matching the UC output
+// stage: which tab this tile belongs to. 'all' = always show
 const TILES = [
   {
     id: 'meddic',
     q: 'Where are the MEDDIC gaps and which deals are stuck?',
+    note: '4 stuck past benchmark',
     useCaseName: 'MEDDIC Gap Detection',
     live: true,
+    stages: ['all', 'Interested'],
     cols: [
-      { label: 'Opportunity', render: r => <><strong>{r.opportunity_name}</strong><br/><span style={{fontSize:12,color:'#6E6F75'}}>{r.account_name}</span></> },
-      { label: 'Owner',       render: r => r.opportunity_owner },
-      { label: 'Stage',       render: r => r.stage_status },
-      { label: 'Date',        render: r => fmt(r.run_timestamp) },
+      { label: 'Opportunity',            render: r => <><strong>{r.opportunity_name}</strong><br/><span style={{fontSize:12,color:'#6E6F75'}}>{r.account_name}</span></> },
+      { label: 'Owner',                  render: r => r.opportunity_owner },
+      { label: 'Stage',                  render: r => r.stage_status },
+      { label: 'Call date',              render: r => fmt(r.call_date) },
       { label: 'What the run log found', render: r => r.headline, wide: true },
     ],
   },
   {
     id: 'eb',
     q: 'Which proposals had no Economic Buyer on the call?',
+    note: 'Stage 3+',
     useCaseName: 'Economic Buyer Absence Detection',
     live: true,
+    stages: ['all', 'Proposal & ROI Reviewed'],
     cols: [
       { label: 'Opportunity', render: r => <><strong>{r.opportunity_name}</strong><br/><span style={{fontSize:12,color:'#6E6F75'}}>{r.account_name}</span></> },
       { label: 'Owner',       render: r => r.opportunity_owner },
       { label: 'Stage',       render: r => r.stage_status },
-      { label: 'Date',        render: r => fmt(r.run_timestamp) },
+      { label: 'Call date',   render: r => fmt(r.call_date) },
       { label: 'Finding',     render: r => r.headline, wide: true },
     ],
   },
   {
     id: 'single',
     q: 'Which deals are single-threaded?',
+    note: 'Stage 1+',
     useCaseName: 'Single-Threaded Deal Risk Detection',
     live: true,
+    stages: ['all', 'Interested'],
     cols: [
-      { label: 'Opportunity',    render: r => <><strong>{r.opportunity_name}</strong></> },
-      { label: 'Owner',          render: r => r.opportunity_owner },
-      { label: 'Stage',          render: r => r.stage_status },
-      { label: 'Days at Stage 1',render: r => parseDays(r.detail) },
-      { label: 'Contacts',       render: r => parseContacts(r.detail) },
-      { label: 'Summary',        render: r => r.headline, wide: true },
+      { label: 'Opportunity',     render: r => <strong>{r.opportunity_name}</strong> },
+      { label: 'Owner',           render: r => r.opportunity_owner },
+      { label: 'Stage',           render: r => r.stage_status },
+      { label: 'Days at stage',   render: r => <strong>{parseDays(r.detail)}</strong> },
+      { label: 'Contacts',        render: r => parseContacts(r.detail) },
+      { label: 'Summary',         render: r => r.headline, wide: true },
     ],
   },
   {
     id: 'battlecard',
     q: 'Which deals are missing a battle card?',
+    note: 'Stage 2+',
     useCaseName: 'Tailored Battle Card Generation',
     live: true,
+    stages: ['all', 'Proposal & ROI Reviewed', 'Team Presentation'],
     cols: [
       { label: 'Opportunity', render: r => <><strong>{r.opportunity_name}</strong><br/><span style={{fontSize:12,color:'#6E6F75'}}>{r.account_name}</span></> },
       { label: 'Owner',       render: r => r.opportunity_owner },
       { label: 'Stage',       render: r => r.stage_status },
-      { label: 'Date',        render: r => fmt(r.run_timestamp) },
+      { label: 'Call date',   render: r => fmt(r.call_date) },
       { label: 'Finding',     render: r => r.headline, wide: true },
     ],
   },
-  { id: 'forecast',  q: 'What does the forecast roll up to by rep?', useCaseName: null, live: false },
-  { id: 'monday',    q: 'Draft the Monday leadership note',           useCaseName: null, live: false },
+  { id: 'forecast', q: 'What does the forecast roll up to by rep?',  note: 'Coming soon', useCaseName: null, live: false, stages: ['all'] },
+  { id: 'monday',   q: 'Draft the Monday leadership note',            note: 'Coming soon', useCaseName: null, live: false, stages: ['all'] },
 ]
 
 function fmt(ts) {
@@ -77,14 +85,12 @@ function fmt(ts) {
   catch { return ts }
 }
 
-// Parse "Days at Stage 1: 12 | ..." from detail field
 function parseDays(detail) {
   if (!detail) return '—'
-  const m = detail.match(/Days at Stage\s*\d*:\s*(\d+)/)
-  return m ? <strong>{m[1]}</strong> : '—'
+  const m = detail.match(/Days at Stage[\s\d]*:\s*(\d+)/)
+  return m ? m[1] : '—'
 }
 
-// Parse "Distinct contacts: 1 (Name)" or "0 (no contacts linked)" from detail
 function parseContacts(detail) {
   if (!detail) return '—'
   const m = detail.match(/Distinct contacts:\s*(\d+[^|]*)/)
@@ -116,6 +122,9 @@ export default function JarvisPage() {
       .catch(() => { setErr('Could not reach the run log webhook.'); setLoading(false) })
   }, [])
 
+  // tiles visible for current stage tab
+  const visibleTiles = TILES.filter(t => t.stages.includes(stage))
+
   const stageRows = stage === 'all' ? rows : rows.filter(r => r.stage_status === stage)
   const tileRows  = tile ? stageRows.filter(r => r.use_case_name === tile.useCaseName) : []
 
@@ -127,10 +136,9 @@ export default function JarvisPage() {
 
   return (
     <>
-      {/* Hero */}
       <section style={{ position:'relative', background:C.purple, color:'#fff', padding:'64px 56px 72px', overflow:'hidden' }}>
-        <div style={{ position:'absolute', width:700, height:700, borderRadius:'50%', border:`1px solid rgba(255,255,255,.15)`, top:-350, right:-280, pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', width:420, height:420, borderRadius:'50%', background:'rgba(217,213,247,.18)', top:-200, right:-120, pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', width:700, height:700, borderRadius:'50%', border:'1px solid rgba(255,255,255,.12)', top:-350, right:-280, pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', width:440, height:440, borderRadius:'50%', background:'rgba(217,213,247,.15)', top:-200, right:-120, pointerEvents:'none' }}/>
         <div style={{ position:'relative', zIndex:1, maxWidth:580 }}>
           <p style={{ fontSize:11, fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.7)', marginBottom:14 }}>Sales Jarvis</p>
           <h1 style={{ fontFamily:"'Lora',Georgia,serif", fontWeight:400, fontSize:52, lineHeight:1.1, color:'#fff', marginBottom:18 }}>Ask anything</h1>
@@ -151,23 +159,26 @@ export default function JarvisPage() {
                 background: stage===t.id ? C.purple : '#fff',
                 color: stage===t.id ? '#fff' : C.charcoal,
                 border: `1px solid ${stage===t.id ? C.purple : C.lav}`,
-                transition:'all 120ms',
               }}>
               {t.label}
             </button>
           ))}
         </div>
 
-        {loading && <div style={{ padding:48, textAlign:'center', color:C.muted, fontSize:15 }}>Reading from run log…</div>}
+        {loading && <div style={{ padding:48, textAlign:'center', color:C.muted }}>Reading from run log…</div>}
         {err     && <div style={{ padding:20, background:'#fff', border:`1px solid ${C.orange}`, borderRadius:12, fontSize:14 }}><strong>Error:</strong> {err}</div>}
 
         {!loading && !err && <>
-          <h2 style={{ fontFamily:"'Lora',Georgia,serif", fontWeight:400, fontSize:30, marginBottom:4 }}>Across the whole book</h2>
-          <p style={{ fontSize:14, color:C.muted, marginBottom:28 }}>Nothing here needs an account — these run across every open deal.</p>
+          <h2 style={{ fontFamily:"'Lora',Georgia,serif", fontWeight:400, fontSize:30, marginBottom:4 }}>
+            {stage === 'all' ? 'Across the whole book' : STAGE_TABS.find(t=>t.id===stage)?.label}
+          </h2>
+          <p style={{ fontSize:14, color:C.muted, marginBottom:28 }}>
+            {stage === 'all' ? 'Nothing here needs an account — these run across every open deal.' : 'Showing findings for this stage only.'}
+          </p>
 
-          {/* Tiles */}
+          {/* Tiles — filtered by stage */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:44 }}>
-            {TILES.map(t => {
+            {visibleTiles.map(t => {
               const active = tile?.id === t.id
               return (
                 <button key={t.id}
@@ -180,7 +191,6 @@ export default function JarvisPage() {
                     minHeight:120, opacity: t.live ? 1 : 0.5,
                     border: `1px solid ${active ? C.yellow : C.lav}`,
                     borderLeft: active ? `3px solid ${C.yellow}` : `1px solid ${C.lav}`,
-                    transition:'border-color 150ms',
                   }}>
                   <span style={{ fontSize:16, fontWeight:700, lineHeight:1.35 }}>{t.q}</span>
                   <span style={{ marginTop:'auto', fontSize:13, color: t.live ? C.muted : C.lav, fontStyle: t.live ? 'normal' : 'italic' }}>
@@ -191,25 +201,20 @@ export default function JarvisPage() {
             })}
           </div>
 
-          {/* Result table — columns vary per tile */}
+          {/* Result table */}
           {tile?.live && <>
             <p style={{ fontSize:11, fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', color:C.muted, marginBottom:6 }}>{tile.q}</p>
             <span style={{ display:'block', width:40, height:3, background:C.yellow, marginBottom:10 }}/>
             <p style={{ fontSize:14, color:C.muted, marginBottom:20 }}>Sorted most recent first. Reads directly from the deal record — nothing here is cached.</p>
 
             {tileRows.length === 0
-              ? <div style={{ background:'#fff', border:`1px dashed ${C.lav}`, borderRadius:16, padding:48, textAlign:'center', color:C.muted, fontSize:15 }}>No findings right now.</div>
+              ? <div style={{ background:'#fff', border:`1px dashed ${C.lav}`, borderRadius:16, padding:48, textAlign:'center', color:C.muted }}>No findings right now.</div>
               : <div style={{ background:'#fff', border:`1px solid ${C.lav}`, borderRadius:16, overflow:'hidden' }}>
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:14 }}>
                     <thead>
                       <tr style={{ background:C.grey }}>
                         {tile.cols.map(c => (
-                          <th key={c.label} style={{
-                            textAlign:'left', fontSize:11, fontWeight:700, letterSpacing:'.08em',
-                            textTransform:'uppercase', color:C.muted,
-                            padding:'12px 16px', borderBottom:`1px solid ${C.lav}`,
-                            whiteSpace:'nowrap',
-                          }}>{c.label}</th>
+                          <th key={c.label} style={{ textAlign:'left', fontSize:11, fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', color:C.muted, padding:'12px 16px', borderBottom:`1px solid ${C.lav}`, whiteSpace:'nowrap' }}>{c.label}</th>
                         ))}
                         <th style={{ background:C.grey, borderBottom:`1px solid ${C.lav}`, width:90 }}/>
                       </tr>
@@ -217,18 +222,13 @@ export default function JarvisPage() {
                     <tbody>
                       {tileRows.map((r, i) => (
                         <>
-                          <tr key={i} style={{ borderBottom:`1px solid rgba(4,6,16,.07)`, verticalAlign:'top' }}>
+                          <tr key={i} style={{ borderBottom:`1px solid rgba(4,6,16,.07)` }}>
                             {tile.cols.map((c, ci) => (
-                              <td key={ci} style={{
-                                padding:'14px 16px', verticalAlign:'top',
-                                maxWidth: c.wide ? 360 : undefined,
-                                lineHeight: 1.5,
-                                whiteSpace: c.wide ? 'normal' : 'nowrap',
-                              }}>
+                              <td key={ci} style={{ padding:'14px 16px', verticalAlign:'top', maxWidth: c.wide ? 360 : undefined, lineHeight:1.5, whiteSpace: c.wide ? 'normal' : 'nowrap' }}>
                                 {c.render(r)}
                               </td>
                             ))}
-                            <td style={{ padding:'14px 16px', verticalAlign:'top', textAlign:'right', whiteSpace:'nowrap' }}>
+                            <td style={{ padding:'14px 16px', verticalAlign:'top', textAlign:'right' }}>
                               <button onClick={() => setExpanded(expanded===i ? null : i)}
                                 style={{ fontSize:13, fontWeight:700, fontFamily:'inherit', background:C.yellow, color:C.charcoal, border:'none', borderRadius:999, padding:'6px 16px', cursor:'pointer' }}>
                                 {expanded===i ? 'Close' : 'Detail'}
@@ -237,7 +237,7 @@ export default function JarvisPage() {
                           </tr>
                           {expanded===i && (
                             <tr key={'d'+i}>
-                              <td colSpan={tile.cols.length + 1} style={{ padding:'16px 20px', background:C.grey, fontSize:13, lineHeight:1.75, whiteSpace:'pre-wrap', borderBottom:`1px solid rgba(4,6,16,.07)` }}>
+                              <td colSpan={tile.cols.length+1} style={{ padding:'16px 20px', background:C.grey, fontSize:13, lineHeight:1.75, whiteSpace:'pre-wrap', borderBottom:`1px solid rgba(4,6,16,.07)` }}>
                                 {r.detail}
                               </td>
                             </tr>

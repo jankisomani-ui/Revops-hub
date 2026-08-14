@@ -4,34 +4,27 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const NAV = [
-  { href: '/',                label: 'Home',             icon: <HomeIcon /> },
-  { href: '/jarvis',          label: 'Sales Jarvis',     icon: <JarvisIcon /> },
-  { href: '/command-center',  label: 'Command Center',   icon: <CmdIcon /> },
-  { href: '/rfp',             label: 'RFP Assistant',    icon: <RfpIcon /> },
-  { href: '/roi',             label: 'ROI Model',        icon: <RoiIcon /> },
-  { href: '/journey',         label: 'Journey Coverage', icon: <JourneyIcon /> },
+  { href:'/',               label:'Home',             icon:'⌂' },
+  { href:'/jarvis',         label:'Sales Jarvis',     icon:'◎' },
+  { href:'/command-center', label:'Command Center',   icon:'▦' },
+  { href:'/rfp',            label:'RFP Assistant',    icon:'◻' },
+  { href:'/roi',            label:'ROI Model Builder',icon:'◈' },
+  { href:'/journey',        label:'Journey coverage', icon:'→' },
 ]
-
-function HomeIcon()    { return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10.5L10 3.5L17 10.5V17H13V13H7V17H3V10.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg> }
-function JarvisIcon()  { return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke="currentColor" strokeWidth="1.5"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg> }
-function CmdIcon()     { return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg> }
-function RfpIcon()     { return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="4" y="2" width="12" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M7 7H13M7 10H13M7 13H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
-function RoiIcon()     { return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 15L7.5 9.5L11 13L15.5 7L18 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function JourneyIcon() { return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10H17M13 6L17 10L13 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 
 export default function Shell({ children }) {
   const [open, setOpen] = useState(true)
   const path = usePathname()
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display:'flex', minHeight:'100vh' }}>
       {/* Sidebar */}
       <aside style={{
-        width: open ? 260 : 72,
+        width: open ? 260 : 64,
         flexShrink: 0,
         background: '#fff',
         borderRight: '1px solid rgba(4,6,16,.1)',
-        padding: '24px 12px',
+        padding: open ? '24px 16px' : '24px 10px',
         display: 'flex',
         flexDirection: 'column',
         gap: 24,
@@ -41,40 +34,50 @@ export default function Shell({ children }) {
         transition: 'width 180ms ease',
         overflow: 'hidden',
       }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, padding: '0 4px' }}>
+        {/* Logo row */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent: open ? 'space-between' : 'center' }}>
           {open && (
             <div>
-              <LogoFull />
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: '#6E6F75', marginTop: 8 }}>RevOps Hub</p>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <svg width="26" height="26" viewBox="0 0 187 198" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M93.0622 0C41.3608 0 0 40.1424 0 99.5424C0 158.671 41.3608 198 93.0622 198C144.763 198 186.125 157.858 186.125 98.4576C186.125 39.3287 144.763 0 93.0622 0ZM92.7508 141.189L50.1392 98.715L92.7508 56.2412L135.362 98.715L92.7508 141.189Z" fill="#79709E"/>
+                </svg>
+                <span style={{ fontSize:17, fontWeight:700, letterSpacing:'-.3px', color:'#040610' }}>CertifyOS</span>
+              </div>
+              <p style={{ fontSize:11, fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase', color:'#6E6F75', marginTop:6, marginLeft:34 }}>RevOps Hub</p>
             </div>
           )}
-          {!open && <LogoMark />}
-          <button
-            onClick={() => setOpen(o => !o)}
-            style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', border: '1px solid #C9BFE9', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#040610', lineHeight: 1 }}
-          >
-            {open ? '‹' : '›'}
-          </button>
+          {!open && (
+            <svg width="28" height="28" viewBox="0 0 187 198" xmlns="http://www.w3.org/2000/svg">
+              <path d="M93.0622 0C41.3608 0 0 40.1424 0 99.5424C0 158.671 41.3608 198 93.0622 198C144.763 198 186.125 157.858 186.125 98.4576C186.125 39.3287 144.763 0 93.0622 0ZM92.7508 141.189L50.1392 98.715L92.7508 56.2412L135.362 98.715L92.7508 141.189Z" fill="#79709E"/>
+            </svg>
+          )}
+          {open && (
+            <button onClick={() => setOpen(false)} style={{ width:28, height:28, borderRadius:'50%', border:'1px solid #C9BFE9', background:'#fff', cursor:'pointer', fontSize:14, color:'#040610', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>‹</button>
+          )}
         </div>
 
+        {!open && (
+          <button onClick={() => setOpen(true)} style={{ width:40, height:40, borderRadius:'50%', border:'1px solid #C9BFE9', background:'#fff', cursor:'pointer', fontSize:14, color:'#040610', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto' }}>›</button>
+        )}
+
         {/* Nav */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {open && <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: '#6E6F75', margin: '0 0 6px 8px' }}>Workspace</p>}
+        <nav style={{ display:'flex', flexDirection:'column', gap:2 }}>
+          {open && <p style={{ fontSize:11, fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase', color:'#6E6F75', margin:'0 0 6px 10px' }}>Workspace</p>}
           {NAV.map(({ href, label, icon }) => {
             const active = path === href
             return (
-              <Link key={href} href={href}>
+              <Link key={href} href={href} style={{ textDecoration:'none' }}>
                 <span style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '9px 10px', borderRadius: 999,
+                  display:'flex', alignItems:'center', gap:10,
+                  padding: open ? '9px 12px' : '9px 0',
+                  borderRadius:999, justifyContent: open ? 'flex-start' : 'center',
                   background: active ? '#D9D5F7' : 'transparent',
-                  fontSize: 14, color: '#040610',
-                  justifyContent: open ? 'flex-start' : 'center',
-                  transition: 'background 120ms',
+                  fontSize:14, color:'#040610', fontWeight: active ? 700 : 400,
+                  transition:'background 120ms',
                 }}>
-                  <span style={{ flexShrink: 0, display: 'flex', color: active ? '#79709E' : '#6E6F75' }}>{icon}</span>
-                  {open && <span style={{ whiteSpace: 'nowrap', fontWeight: active ? 700 : 400 }}>{label}</span>}
+                  <span style={{ fontSize:16, color: active ? '#79709E' : '#6E6F75', flexShrink:0, width:20, textAlign:'center' }}>{icon}</span>
+                  {open && <span style={{ whiteSpace:'nowrap' }}>{label}</span>}
                 </span>
               </Link>
             )
@@ -82,33 +85,14 @@ export default function Shell({ children }) {
         </nav>
 
         {open && (
-          <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(4,6,16,.1)', paddingTop: 16, fontSize: 11, fontWeight: 700, letterSpacing: '.5px', textTransform: 'uppercase', color: '#6E6F75' }}>
+          <div style={{ marginTop:'auto', borderTop:'1px solid rgba(4,6,16,.1)', paddingTop:16, fontSize:11, fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase', color:'#6E6F75' }}>
             Internal &amp; confidential
           </div>
         )}
       </aside>
 
-      {/* Main */}
-      <main style={{ flex: 1, minWidth: 0 }}>{children}</main>
+      {/* Main content */}
+      <main style={{ flex:1, minWidth:0 }}>{children}</main>
     </div>
-  )
-}
-
-function LogoFull() {
-  return (
-    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-      <svg width="28" height="28" viewBox="0 0 187 198" xmlns="http://www.w3.org/2000/svg">
-        <path d="M93.0622 0C41.3608 0 0 40.1424 0 99.5424C0 158.671 41.3608 198 93.0622 198C144.763 198 186.125 157.858 186.125 98.4576C186.125 39.3287 144.763 0 93.0622 0ZM92.7508 141.189L50.1392 98.715L92.7508 56.2412L135.362 98.715L92.7508 141.189Z" fill="#79709E"/>
-      </svg>
-      <span style={{ fontSize:18, fontWeight:700, letterSpacing:'-.3px', color:'#040610', fontFamily:'inherit' }}>CertifyOS</span>
-    </div>
-  )
-}
-
-function LogoMark() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 187 198" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-      <path d="M93.0622 0C41.3608 0 0 40.1424 0 99.5424C0 158.671 41.3608 198 93.0622 198C144.763 198 186.125 157.858 186.125 98.4576C186.125 39.3287 144.763 0 93.0622 0ZM92.7508 141.189L50.1392 98.715L92.7508 56.2412L135.362 98.715L92.7508 141.189Z" fill="#79709E"/>
-    </svg>
   )
 }
