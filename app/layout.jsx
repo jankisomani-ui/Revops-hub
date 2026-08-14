@@ -1,19 +1,13 @@
-import "./globals.css"
-import Sidebar from "./components/Sidebar"
+import './globals.css'
+import Shell from './components/Shell'
 
-export const metadata = {
-  title: "RevOps Hub — CertifyOS",
-  description: "Internal revenue operations tools",
-}
+export const metadata = { title: 'RevOps Hub — CertifyOS' }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{ display: "flex", minHeight: "100vh", background: "#F4F4F4" }}>
-        <Sidebar />
-        <main style={{ flex: 1, minWidth: 0 }}>
-          {children}
-        </main>
+      <body>
+        <Shell>{children}</Shell>
       </body>
     </html>
   )
