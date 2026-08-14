@@ -7,6 +7,7 @@ import Logo from "./Logo"
 const NAV = [
   { href: "/",               icon: "⬡", label: "Home" },
   { href: "/jarvis",         icon: "◎", label: "Sales Jarvis" },
+  { href: "/deal-mismatch",  icon: "⚠", label: "Deal Mismatch" },
   { href: "/command-center", icon: "▦",  label: "Command Center" },
   { href: "/rfp",            icon: "◻", label: "RFP Assistant" },
   { href: "/roi",            icon: "◈", label: "ROI Model" },
