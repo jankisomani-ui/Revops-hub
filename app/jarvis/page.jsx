@@ -1,168 +1,182 @@
-"use client"
-import { useState } from "react"
+'use client'
+import { useState, useEffect } from 'react'
+import { C } from '../components/ui'
 
-const PRESETS = [
-  { id: "meddic_gaps",        label: "Which deals have MEDDIC gaps?",          count: "Across all open deals" },
-  { id: "eb_absent",          label: "Which proposals had no Economic Buyer?",  count: "Stage 3 and above" },
-  { id: "single_threaded",    label: "Which deals are single-threaded?",        count: "Stage 1 and above" },
-  { id: "silent_stakeholder", label: "Which demos had a silent stakeholder?",   count: "Stage 2 and above" },
-  { id: "closing_no_activity",label: "Deals closing this month with no activity in 14+ days", count: "All stages" },
-  { id: "champion_risk",      label: "Which champions are at risk?",            count: "Stage 1–3" },
-  { id: "stale_next_step",    label: "Which deals have stale next-step notes?", count: "All open deals" },
-  { id: "call_prep",          label: "Prep me for an upcoming call",            count: "Per deal" },
+const WEBHOOK = 'https://certifyos.app.n8n.cloud/webhook/jarvis-run-log'
+
+const STAGE_TABS = [
+  { id: 'all',                      label: 'Portfolio' },
+  { id: 'Interested',               label: 'Stage 1 · Interested' },
+  { id: 'Team Presentation',        label: 'Stage 2 · Team Presentation' },
+  { id: 'Proposal & ROI Reviewed',  label: 'Stage 3 · Proposal & ROI' },
+  { id: 'Contracting',              label: 'Stage 4 · Contracting' },
 ]
 
-const N8N_WEBHOOK = process.env.NEXT_PUBLIC_JARVIS_WEBHOOK || ""
+const TILES = [
+  { id:'meddic',     q:'Where are the MEDDIC gaps and which deals are stuck?',         useCaseName:'MEDDIC Gap Detection',                live:true  },
+  { id:'eb',         q:'Which proposals had no Economic Buyer on the call?',            useCaseName:'Economic Buyer Absence Detection',     live:true  },
+  { id:'single',     q:'Which deals are single-threaded?',                              useCaseName:'Single-Threaded Deal Risk Detection',  live:true  },
+  { id:'battlecard', q:'Which deals are missing a battle card?',                        useCaseName:'Tailored Battle Card Generation',      live:true  },
+  { id:'forecast',   q:'What does the forecast roll up to by rep?',                     useCaseName:null,                                   live:false },
+  { id:'monday',     q:'Draft the Monday leadership note',                              useCaseName:null,                                   live:false },
+]
+
+function fmt(ts) {
+  if (!ts) return '—'
+  try { return new Date(ts).toLocaleDateString('en-US', { month:'short', day:'numeric' }) }
+  catch { return ts }
+}
+
+function dedup(rows) {
+  const seen = new Map()
+  const sorted = [...rows].sort((a,b) => new Date(b.run_timestamp) - new Date(a.run_timestamp))
+  for (const r of sorted) {
+    const key = `${r.opportunity_id}|${r.use_case_name}`
+    if (!seen.has(key)) seen.set(key, r)
+  }
+  return Array.from(seen.values())
+}
 
 export default function JarvisPage() {
-  const [selected, setSelected] = useState(null)
-  const [dealName, setDealName] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
+  const [rows,     setRows]     = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [err,      setErr]      = useState(null)
+  const [stage,    setStage]    = useState('all')
+  const [tile,     setTile]     = useState(null)
+  const [expanded, setExpanded] = useState(null)
 
-  async function run(presetId) {
-    setSelected(presetId)
-    setResult(null)
-    setError(null)
-    setLoading(true)
-    try {
-      const res = await fetch(N8N_WEBHOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ preset: presetId, dealName }),
-      })
-      const data = await res.json()
-      setResult(data)
-    } catch (e) {
-      setError("Could not reach the workflow. Check that the n8n webhook is live.")
-    } finally {
-      setLoading(false)
-    }
+  useEffect(() => {
+    fetch(WEBHOOK)
+      .then(r => r.json())
+      .then(d => { setRows(dedup(d.rows || [])); setLoading(false) })
+      .catch(() => { setErr('Could not reach the run log webhook.'); setLoading(false) })
+  }, [])
+
+  const stageRows = stage === 'all' ? rows : rows.filter(r => r.stage_status === stage)
+  const tileRows  = tile ? stageRows.filter(r => r.use_case_name === tile.useCaseName) : []
+
+  function countFor(t) {
+    if (!t.live) return null
+    return stageRows.filter(r => r.use_case_name === t.useCaseName).length
+  }
+  function noteFor(t) {
+    if (!t.live) return 'Coming soon'
+    const n = countFor(t)
+    return n === 0 ? 'No findings' : `${n} finding${n !== 1 ? 's' : ''}`
   }
 
   return (
     <>
-      {/* Hero */}
-      <section style={{
-        position: "relative",
-        background: "#79709E",
-        color: "#FFFFFF",
-        padding: "64px 56px 72px",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          position: "absolute", width: 400, height: 400,
-          borderRadius: "50%", background: "#D9D5F7",
-          top: -210, right: -150,
-        }} />
-        <div style={{ position: "relative", zIndex: 1, maxWidth: 620 }}>
-          <p className="eyebrow-white" style={{ margin: "0 0 14px" }}>Sales Jarvis</p>
-          <h1 style={{
-            fontFamily: "'Ivar Text', Lora, serif",
-            fontWeight: 400, fontSize: 48,
-            lineHeight: 1.15, margin: "0 0 20px", color: "#FFFFFF",
-          }}>
-            Ask anything
-          </h1>
-          <p style={{ fontSize: 18, lineHeight: 1.4, margin: 0, color: "#FFFFFF" }}>
-            Pick a question. Each one reads live from the deal record every time you run it.
-          </p>
+      <section style={{ position:'relative', background:C.purple, color:'#fff', padding:'64px 56px 72px', overflow:'hidden' }}>
+        <div style={{ position:'absolute', width:620, height:620, borderRadius:'50%', border:`1px solid ${C.lav}`, top:-300, right:-300, pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', width:400, height:400, borderRadius:'50%', background:C.lavt, top:-210, right:-150, pointerEvents:'none' }}/>
+        <div style={{ position:'relative', zIndex:1, maxWidth:620 }}>
+          <p style={{ fontSize:11, fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', color:'#fff', marginBottom:14 }}>Sales Jarvis</p>
+          <h1 style={{ fontFamily:"'Lora',Georgia,serif", fontWeight:400, fontSize:48, lineHeight:1.15, color:'#fff', marginBottom:16 }}>Ask anything</h1>
+          <p style={{ fontSize:18, lineHeight:1.4, color:'#fff' }}>Pick a question. Each one reads live from the deal record every time you open it, so the answer is what is true right now.</p>
         </div>
       </section>
 
-      <div style={{ padding: "48px 56px 80px" }}>
+      <div style={{ padding:'40px 56px 80px' }}>
 
-        {/* Optional deal name for per-deal presets */}
-        <div style={{ marginBottom: 32, maxWidth: 480 }}>
-          <label className="eyebrow" style={{ display: "block", marginBottom: 8 }}>
-            Deal name (optional — required for call prep)
-          </label>
-          <input
-            value={dealName}
-            onChange={e => setDealName(e.target.value)}
-            placeholder="e.g. BCBS Illinois — PDM"
-            style={{
-              width: "100%",
-              padding: "10px 16px",
-              border: "1px solid #C9BFE9",
-              borderRadius: 999,
-              font: "inherit",
-              fontSize: 14,
-              background: "#FFFFFF",
-              color: "#040610",
-              outline: "none",
-            }}
-          />
-        </div>
-
-        {/* Preset grid */}
-        <p className="eyebrow yellow-rule" style={{ margin: "0 0 24px" }}>Questions</p>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: 16,
-          marginBottom: 48,
-        }}>
-          {PRESETS.map((q) => (
-            <button
-              key={q.id}
-              onClick={() => run(q.id)}
-              className="card"
+        {/* Stage tabs */}
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:36 }}>
+          {STAGE_TABS.map(t => (
+            <button key={t.id}
+              onClick={() => { setStage(t.id); setTile(null); setExpanded(null) }}
               style={{
-                display: "flex", flexDirection: "column", gap: 16,
-                padding: 24, textAlign: "left", font: "inherit",
-                color: "#040610", cursor: "pointer", minHeight: 120,
-                position: "relative", background: "#FFFFFF",
-                borderLeft: selected === q.id ? "3px solid #F3C948" : "1px solid #C9BFE9",
-              }}
-            >
-              <span style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.3 }}>{q.label}</span>
-              <span style={{ marginTop: "auto", fontSize: 13, color: "#6E6F75" }}>{q.count}</span>
+                fontSize:14, fontFamily:'inherit', fontWeight: stage===t.id ? 700 : 400,
+                padding:'8px 18px', borderRadius:999, cursor:'pointer',
+                background: stage===t.id ? C.purple : '#fff',
+                color: stage===t.id ? '#fff' : C.charcoal,
+                border: `1px solid ${stage===t.id ? C.purple : C.lav}`,
+              }}>
+              {t.label}
             </button>
           ))}
         </div>
 
-        {/* Result area */}
-        {loading && (
-          <div style={{
-            background: "#FFFFFF", border: "1px solid #C9BFE9",
-            borderRadius: 16, padding: 48, textAlign: "center",
-            fontSize: 15, color: "#6E6F75",
-          }}>
-            Reading from live deal record…
-          </div>
-        )}
+        {loading && <div style={{ padding:48, textAlign:'center', color:C.muted }}>Reading from run log…</div>}
+        {err     && <div style={{ padding:20, border:`1px solid ${C.orange}`, borderRadius:12, fontSize:14 }}>{err}</div>}
 
-        {error && (
-          <div style={{
-            background: "#FFFFFF", border: "1px solid #E5974D",
-            borderRadius: 16, padding: 32,
-            fontSize: 14, color: "#040610",
-          }}>
-            <strong>Error:</strong> {error}
-          </div>
-        )}
+        {!loading && !err && <>
+          <h2 style={{ fontFamily:"'Lora',Georgia,serif", fontWeight:400, fontSize:28, marginBottom:4 }}>Across the whole book</h2>
+          <p style={{ fontSize:14, color:C.muted, marginBottom:24 }}>Nothing here needs an account — these run across every open deal.</p>
 
-        {result && !loading && (
-          <div style={{
-            background: "#FFFFFF", border: "1px solid #C9BFE9",
-            borderRadius: 16, overflow: "hidden",
-          }}>
-            <div style={{
-              padding: "20px 28px",
-              borderBottom: "1px solid rgba(4,6,16,0.10)",
-              background: "#F4F4F4",
-            }}>
-              <p className="eyebrow yellow-rule" style={{ margin: 0 }}>
-                {PRESETS.find(q => q.id === selected)?.label}
-              </p>
-            </div>
-            <div style={{ padding: 28, fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-              {typeof result === "string" ? result : JSON.stringify(result, null, 2)}
-            </div>
+          {/* Tiles */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:16, marginBottom:40 }}>
+            {TILES.map(t => {
+              const active = tile?.id === t.id
+              return (
+                <button key={t.id}
+                  onClick={() => { if (!t.live) return; setTile(active ? null : t); setExpanded(null) }}
+                  style={{
+                    display:'flex', flexDirection:'column', gap:12,
+                    background:'#fff', borderRadius:16, padding:24,
+                    textAlign:'left', fontFamily:'inherit', color:C.charcoal,
+                    cursor: t.live ? 'pointer' : 'default',
+                    minHeight:110, opacity: t.live ? 1 : 0.55,
+                    border: `1px solid ${active ? C.yellow : C.lav}`,
+                    borderLeft: active ? `3px solid ${C.yellow}` : `1px solid ${C.lav}`,
+                  }}>
+                  <span style={{ fontSize:16, fontWeight:700, lineHeight:1.35 }}>{t.q}</span>
+                  <span style={{ marginTop:'auto', fontSize:13, color:C.muted }}>{noteFor(t)}</span>
+                </button>
+              )
+            })}
           </div>
-        )}
+
+          {/* Result table */}
+          {tile?.live && <>
+            <p style={{ fontSize:11, fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', color:C.muted, marginBottom:4 }}>{tile.q}</p>
+            <span style={{ display:'block', width:40, height:3, background:C.yellow, marginBottom:8 }}/>
+            <p style={{ fontSize:14, color:C.muted, marginBottom:20 }}>Sorted most recent first. Reads directly from the deal record — nothing here is cached.</p>
+
+            {tileRows.length === 0
+              ? <div style={{ background:'#fff', border:`1px dashed ${C.lav}`, borderRadius:16, padding:48, textAlign:'center', color:C.muted }}>No findings right now.</div>
+              : <div style={{ background:'#fff', border:`1px solid ${C.lav}`, borderRadius:16, overflow:'hidden' }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:14 }}>
+                    <thead>
+                      <tr style={{ background:C.grey }}>
+                        {['Opportunity','Owner','Stage','Signal Date','What the run log found',''].map(h => (
+                          <th key={h} style={{ textAlign:'left', fontSize:11, fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', color:C.muted, padding:'13px 16px', borderBottom:`1px solid ${C.lav}` }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tileRows.map((r, i) => (
+                        <>
+                          <tr key={i} style={{ borderBottom:`1px solid rgba(4,6,16,.08)` }}>
+                            <td style={{ padding:'14px 16px', verticalAlign:'top' }}>
+                              <strong>{r.opportunity_name}</strong>
+                              <span style={{ display:'block', fontSize:12, color:C.muted }}>{r.account_name}</span>
+                            </td>
+                            <td style={{ padding:'14px 16px', verticalAlign:'top' }}>{r.opportunity_owner}</td>
+                            <td style={{ padding:'14px 16px', verticalAlign:'top', fontSize:13, color:C.muted, whiteSpace:'nowrap' }}>{r.stage_status}</td>
+                            <td style={{ padding:'14px 16px', verticalAlign:'top', fontSize:13, color:C.muted, whiteSpace:'nowrap' }}>{fmt(r.run_timestamp)}</td>
+                            <td style={{ padding:'14px 16px', verticalAlign:'top', maxWidth:340, lineHeight:1.5 }}>{r.headline}</td>
+                            <td style={{ padding:'14px 16px', verticalAlign:'top', textAlign:'right' }}>
+                              <button onClick={() => setExpanded(expanded===i ? null : i)}
+                                style={{ fontSize:13, fontWeight:700, fontFamily:'inherit', background:C.yellow, color:C.charcoal, border:'none', borderRadius:999, padding:'6px 16px', cursor:'pointer' }}>
+                                {expanded===i ? 'Close' : 'Detail'}
+                              </button>
+                            </td>
+                          </tr>
+                          {expanded===i && (
+                            <tr key={'d'+i}>
+                              <td colSpan={6} style={{ padding:'16px 20px', background:C.grey, fontSize:13, lineHeight:1.7, whiteSpace:'pre-wrap', borderBottom:`1px solid rgba(4,6,16,.08)` }}>
+                                {r.detail}
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+            }
+          </>}
+        </>}
       </div>
     </>
   )
